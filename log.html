@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHOST X PANEL - Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0d17;
+            --card-bg: rgba(22, 27, 46, 0.85);
+            --accent-neon: #ff0055;
+            --primary-neon: #00ffcc;
+            --blue-neon: #00b3ff;
+            --text-color: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+        body {
+            background-color: var(--bg-color); color: var(--text-color);
+            display: flex; flex-direction: column; align-items: center; padding: 40px 10px; min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 50%, #13172e 0%, #0b0d17 100%);
+        }
+
+        .panel-container {
+            background: var(--card-bg); width: 100%; max-width: 480px; padding: 30px;
+            border-radius: 16px; border: 1px solid rgba(255, 0, 85, 0.3);
+            box-shadow: 0 0 30px rgba(255, 0, 85, 0.15); margin-bottom: 30px; backdrop-filter: blur(10px);
+        }
+
+        .panel-title {
+            text-align: center; font-size: 1.6rem; margin-bottom: 20px;
+            color: var(--accent-neon); text-shadow: 0 0 10px rgba(255, 0, 85, 0.6); letter-spacing: 2px;
+        }
+
+        .input-group { margin-bottom: 15px; position: relative; }
+        .input-group i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--accent-neon); }
+        .input-group input {
+            width: 100%; padding: 12px 15px 12px 45px; background: #080a12; border: 1px solid #3d1f2d;
+            border-radius: 8px; color: #fff; font-size: 0.95rem; outline: none; transition: 0.3s;
+        }
+        .input-group input:focus { border-color: var(--accent-neon); box-shadow: 0 0 10px rgba(255, 0, 85, 0.3); }
+
+        .action-btn {
+            width: 100%; padding: 12px; background: linear-gradient(45deg, var(--accent-neon), #b3003b);
+            border: none; color: #fff; font-weight: bold; font-size: 1rem; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.4); transition: 0.3s; letter-spacing: 1px;
+        }
+        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 0 25px rgba(255, 0, 85, 0.8); }
+
+        .alert { margin-top: 15px; padding: 10px; border-radius: 5px; text-align: center; font-size: 0.9rem; display: none; }
+        .alert.success { background: rgba(0, 255, 136, 0.15); border: 1px solid #00ff88; color: #00ff88; display: block; }
+        .alert.error { background: rgba(255, 0, 85, 0.15); border: 1px solid var(--accent-neon); color: var(--accent-neon); display: block; }
+
+        .user-list-container, .button-manager-container {
+            width: 100%; max-width: 480px; background: var(--card-bg); padding: 20px;
+            border-radius: 16px; border: 1px solid rgba(0, 255, 204, 0.2); backdrop-filter: blur(10px); margin-bottom: 30px;
+        }
+        
+        .user-card, .btn-item {
+            background: #080a12; border: 1px solid rgba(0, 255, 204, 0.15); padding: 14px 15px;
+            border-radius: 10px; margin-top: 12px; transition: 0.3s;
+        }
+        .user-card.banned { border-color: var(--accent-neon); background: rgba(255, 0, 85, 0.05); }
+
+        .user-header, .btn-info { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; margin-bottom: 8px; }
+        .btn-group, .action-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+
+        .ban-btn { background: #ff0055; border: none; color: #fff; padding: 6px 10px; font-size: 0.75rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .unban-btn { background: #00ffcc; border: none; color: #0d0f1b; padding: 6px 10px; font-size: 0.75rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .notice-btn { background: #00b3ff; border: none; color: #fff; padding: 6px 10px; font-size: 0.75rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .call-btn { background: #00ff88; border: none; color: #000; padding: 6px 10px; font-size: 0.75rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        
+        .chat-btn-wrapper { position: relative; display: inline-block; }
+        .chat-btn { background: #ffaa00; border: none; color: #000; padding: 6px 10px; font-size: 0.75rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .badge-count {
+            position: absolute; top: -8px; right: -8px; background: #ff0055; color: #fff;
+            font-size: 0.65rem; font-weight: 800; border-radius: 50%; width: 18px; height: 18px;
+            display: flex; justify-content: center; align-items: center; border: 2px solid #080a12;
+            box-shadow: 0 0 8px rgba(255, 0, 85, 0.8);
+        }
+
+        .status-indicator { font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+        .online-dot { color: #00ff88; text-shadow: 0 0 6px #00ff88; }
+        .offline-dot { color: #888; }
+
+        .typing-indicator {
+            color: #ffaa00; font-size: 0.8rem; font-weight: bold; font-style: italic;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .dots-bounce span {
+            display: inline-block; width: 4px; height: 4px; background: #ffaa00;
+            border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .dots-bounce span:nth-child(1) { animation-delay: -0.32s; }
+        .dots-bounce span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-box { background: var(--card-bg); border: 1px solid var(--primary-neon); padding: 25px; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; }
+        .modal-box textarea { width: 100%; height: 90px; background: #080a12; border: 1px solid #3d1f2d; color: #fff; padding: 10px; border-radius: 8px; outline: none; margin: 10px 0; resize: none; }
+
+        .chat-area { height: 210px; background: #05070d; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin: 10px 0; text-align: left; }
+        .msg-bubble { padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; max-width: 80%; word-break: break-word; }
+        .msg-user { background: #182035; color: #fff; align-self: flex-start; }
+        .msg-admin { background: var(--blue-neon); color: #000; font-weight: 600; align-self: flex-end; }
+        audio { max-width: 200px; height: 35px; outline: none; border-radius: 20px; }
+
+        .mic-btn {
+            background: #ff0055; border: none; color: #fff; width: 38px; height: 38px; border-radius: 8px;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s;
+        }
+        .mic-btn.recording { background: #00ff88; color: #000; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        .call-avatar { width: 80px; height: 80px; border-radius: 50%; background: rgba(0,255,204,0.1); border: 2px solid var(--primary-neon); display: flex; justify-content: center; align-items: center; font-size: 2.5rem; color: var(--primary-neon); margin: 0 auto 15px auto; animation: pulseCall 1.5s infinite; }
+        @keyframes pulseCall { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 204, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(0, 255, 204, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 204, 0); } }
+        .end-call-btn { background: #ff0055; color: #fff; border: none; padding: 12px 25px; font-weight: bold; border-radius: 25px; cursor: pointer; margin-top: 15px; font-size: 1rem; }
+
+        .update-panel { border-color: rgba(0, 179, 255, 0.4); }
+        .update-panel .input-group i { color: var(--blue-neon); }
+        .update-btn { background: linear-gradient(45deg, var(--blue-neon), #0077b3) !important; }
+        .update-btn:hover { box-shadow: 0 0 25px rgba(0, 179, 255, 0.8) !important; }
+        
+        .ctrl-action-btn { width: auto; padding: 6px 10px; font-size: 11px; font-weight: bold; border-radius: 6px; cursor: pointer; border: none; }
+        .delete-btn { background: #ff2a5f; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <!-- ====== GENERATE USER PANEL ====== -->
+    <div class="panel-container">
+        <h2 class="panel-title"><i class="fa-solid fa-user-shield"></i> GHOST X ADMIN PANEL</h2>
+        
+        <div class="input-group"><i class="fa-solid fa-user-plus"></i><input type="text" id="genUsername" placeholder="Username"></div>
+        <div class="input-group"><i class="fa-solid fa-key"></i><input type="text" id="genPassword" placeholder="Password"></div>
+        <div class="input-group"><i class="fa-solid fa-calendar-days"></i><input type="number" id="genDays" placeholder="Validity Days (e.g. 7)"></div>
+        <div class="input-group"><i class="fa-solid fa-mobile-screen"></i><input type="number" id="genDeviceLimit" placeholder="Device Limit (e.g. 1)" value="1"></div>
+
+        <button class="action-btn" onclick="generateCredentials()">GENERATE USER</button>
+        <div id="adminAlert" class="alert"></div>
+    </div>
+
+    <!-- ====== UPDATE SYSTEM PANEL ====== -->
+    <div class="panel-container update-panel">
+        <h3 style="color: var(--blue-neon); text-align: center; letter-spacing: 1px; margin-bottom:15px;">
+            <i class="fa-solid fa-cloud-upload-alt"></i> UPDATE SYSTEM
+        </h3>
+        <div class="input-group"><i class="fa-solid fa-link"></i><input type="text" id="updateLink" placeholder="Link"></div>
+        <div class="input-group"><i class="fa-solid fa-message"></i><input type="text" id="updateMessage" placeholder="Message"></div>
+        <div class="input-group"><i class="fa-solid fa-code"></i><input type="text" id="updateVersion" placeholder="Version"></div>
+        <button class="action-btn update-btn" onclick="saveUpdate()">
+            <i class="fa-solid fa-save"></i> SAVE UPDATE
+        </button>
+        <div id="updateAlert" class="alert"></div>
+    </div>
+
+    <!-- ====== USER LIST ====== -->
+    <div class="user-list-container">
+        <h3 style="color: var(--primary-neon); text-align: center; letter-spacing: 1px;"><i class="fa-solid fa-users"></i> ALL REGISTERED USERS</h3>
+        <div id="usersList">Loading users...</div>
+    </div>
+
+    <!-- ====== BUTTON MANAGER PANEL (NOW AT THE BOTTOM) ====== -->
+    <div class="button-manager-container">
+        <h3 style="color: var(--primary-neon); text-align: center; letter-spacing: 1px; margin-bottom: 15px;"><i class="fa-solid fa-gamepad"></i> ADD CUSTOM BUTTON</h3>
+        <div class="input-group"><i class="fa-solid fa-tag"></i><input type="text" id="newBtnName" placeholder="Button Name (e.g. Speed Hack)"></div>
+        <div class="input-group"><i class="fa-solid fa-list-ol"></i><input type="number" id="newBtnIndex" placeholder="Index Number (e.g. 6, 7...)"></div>
+        <button class="action-btn" onclick="addNewButton()" style="background: linear-gradient(90deg, #00ffcc, #00b3ff); color:#000;">ADD NEW BUTTON</button>
+        
+        <h3 style="color: var(--primary-neon); text-align: center; letter-spacing: 1px; margin: 20px 0 10px 0;"><i class="fa-solid fa-sliders"></i> MANAGE BUTTONS</h3>
+        <div id="admin-button-list">Loading buttons...</div>
+    </div>
+
+    <!-- ====== MODALS ====== -->
+    <div id="noticeModal" class="modal">
+        <div class="modal-box">
+            <h4 style="color: var(--blue-neon);" id="noticeTargetUser">Send Auto Pop-up Notice</h4>
+            <textarea id="adminNoticeText" placeholder="Write notice here..."></textarea>
+            <div style="display: flex; gap: 10px;">
+                <button class="action-btn" style="background: var(--blue-neon); color:#000;" onclick="sendAutoNotice()">SEND</button>
+                <button class="action-btn" style="background: #444;" onclick="closeModal('noticeModal')">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chatModal" class="modal">
+        <div class="modal-box">
+            <h4 style="color: #ffaa00;" id="chatTargetUser"><i class="fa-solid fa-envelope"></i> Mailbox Chat</h4>
+            <div class="chat-area" id="adminChatMessages"></div>
+            <div id="modalTypingStatus" style="height: 20px; text-align: left; padding-left: 5px; margin-bottom: 5px;"></div>
+            <div style="display: flex; gap: 5px; align-items: center;">
+                <input type="text" id="chatReplyInput" style="flex:1; padding:10px; background:#080a12; border:1px solid #333; color:#fff; border-radius:8px; outline:none;" placeholder="Type reply...">
+                <button class="mic-btn" id="adminMicBtn" onclick="toggleRecordVoice()"><i class="fa-solid fa-microphone"></i></button>
+                <button class="action-btn" style="width: auto; padding: 10px 15px; background:#ffaa00; color:#000;" onclick="sendChatReply()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+            <button class="action-btn" style="background: #444; margin-top:10px;" onclick="closeModal('chatModal')">CLOSE</button>
+        </div>
+    </div>
+
+    <div id="callModal" class="modal">
+        <div class="modal-box">
+            <div class="call-avatar"><i class="fa-solid fa-phone"></i></div>
+            <h3 style="color: var(--primary-neon);" id="callStatusTitle">Calling User...</h3>
+            <p style="color: #888; margin-top: 5px;" id="callingUserName">--</p>
+            <button class="end-call-btn" onclick="endVoiceCall()"><i class="fa-solid fa-phone-slash"></i> End Call</button>
+        </div>
+    </div>
+
+    <audio id="remoteAudio" autoplay></audio>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, update, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            databaseURL: "https://test-795b1-default-rtdb.firebaseio.com",
+            projectId: "test-795b1",
+            storageBucket: "test-795b1.firebasestorage.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        
+        let selectedUser = '';
+        let adminTypingTimeout = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+
+        let peer = new Peer('admin_ghost_x_panel');
+        let currentCall = null;
+        let localStream = null;
+        let activeCallUser = '';
+
+        peer.on('open', id => console.log('Admin Peer ID Registered:', id));
+
+        onValue(ref(database, 'panel_buttons'), (snapshot) => {
+            if (!snapshot.exists()) {
+                const defaultButtons = {
+                    "btn_1": { index: 1, name: "White Location", active: true },
+                    "btn_2": { index: 2, name: "Yellow Location", active: true },
+                    "btn_3": { index: 3, name: "Offline Bypass", active: true },
+                    "btn_4": { index: 4, name: "Green Location", active: true },
+                    "btn_5": { index: 5, name: "Magic Bullet", active: true }
+                };
+                set(ref(database, 'panel_buttons'), defaultButtons);
+            }
+        }, { onlyOnce: true });
+
+        function loadUpdateData() {
+            const linkInput = document.getElementById('updateLink');
+            const msgInput = document.getElementById('updateMessage');
+            const verInput = document.getElementById('updateVersion');
+
+            onValue(ref(database, 'update/up'), (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    linkInput.value = data.link || '';
+                    msgInput.value = data.message || '';
+                    verInput.value = data.version || '';
+                }
+            });
+        }
+
+        window.saveUpdate = function() {
+            const link = document.getElementById('updateLink').value.trim();
+            const message = document.getElementById('updateMessage').value.trim();
+            const version = document.getElementById('updateVersion').value.trim();
+            const alertBox = document.getElementById('updateAlert');
+
+            if (!link) {
+                showAlert(alertBox, "Please enter a valid link!", "error");
+                return;
+            }
+
+            set(ref(database, 'update/up'), { link, message, version }).then(() => {
+                showAlert(alertBox, "✅ Update saved successfully!", "success");
+            }).catch((error) => {
+                showAlert(alertBox, "Error: " + error.message, "error");
+            });
+        };
+
+        window.addNewButton = function() {
+            const name = document.getElementById("newBtnName").value.trim();
+            const index = parseInt(document.getElementById("newBtnIndex").value);
+
+            if (!name || isNaN(index)) {
+                alert("দয়া করে সঠিক নাম এবং ইনডেক্স নম্বর দিন!");
+                return;
+            }
+
+            const newChildRef = push(ref(database, "panel_buttons"));
+            set(newChildRef, { name, index, active: true }).then(() => {
+                alert("নতুন বাটন সফলভাবে যোগ করা হয়েছে!");
+                document.getElementById("newBtnName").value = "";
+                document.getElementById("newBtnIndex").value = "";
+            });
+        };
+
+        window.updateButtonName = function(key) {
+            const newName = document.getElementById(`rename_${key}`).value.trim();
+            if (!newName) {
+                alert("বাটনের নাম খালি রাখা যাবে না!");
+                return;
+            }
+            update(ref(database, `panel_buttons/${key}`), { name: newName }).then(() => {
+                alert("বাটনের নাম সফলভাবে পরিবর্তন করা হয়েছে!");
+            });
+        };
+
+        window.toggleButtonStatus = function(key, currentStatus) {
+            update(ref(database, `panel_buttons/${key}`), { active: !currentStatus });
+        };
+
+        window.deleteButton = function(key) {
+            if (confirm("আপনি কি নিশ্চিতভাবে এই বাটনটি ডিলিট করতে চান?")) {
+                remove(ref(database, `panel_buttons/${key}`));
+            }
+        };
+
+        onValue(ref(database, "panel_buttons"), (snapshot) => {
+            const listContainer = document.getElementById("admin-button-list");
+            listContainer.innerHTML = "";
+
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    const key = childSnapshot.key;
+                    const data = childSnapshot.val();
+                    const isActive = data.active !== undefined ? data.active : true;
+
+                    listContainer.innerHTML += `
+                        <div class="btn-item">
+                            <div class="btn-info">
+                                <span>🆔 [Index: ${data.index}]</span>
+                                <span style="background:${isActive ? '#00cc6633' : '#ff2a5f33'}; color:${isActive ? '#00cc66' : '#ff2a5f'}; padding:2px 6px; border-radius:4px; font-size:10px;">
+                                    ${isActive ? 'ACTIVE' : 'BANNED / HIDDEN'}
+                                </span>
+                            </div>
+                            <div class="action-row">
+                                <input type="text" id="rename_${key}" value="${data.name}" style="flex:1; padding:8px; background:#080a12; border:1px solid #333; color:#fff; border-radius:6px; outline:none;" placeholder="Button Name">
+                                <button class="ctrl-action-btn" style="background:#00b3ff; color:#000;" onclick="updateButtonName('${key}')">Rename</button>
+                            </div>
+                            <div class="action-row" style="margin-top:8px;">
+                                <button class="ctrl-action-btn ${isActive ? 'ban-btn' : 'unban-btn'}" onclick="toggleButtonStatus('${key}', ${isActive})">
+                                    ${isActive ? '🚫 Ban / Hide' : '✅ Unban / Show'}
+                                </button>
+                                <button class="ctrl-action-btn delete-btn" onclick="deleteButton('${key}')">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                listContainer.innerHTML = "<p style='color:gray; font-size:12px; text-align:center;'>কোনো বাটন পাওয়া যায়নি।</p>";
+            }
+        });
+
+        window.startVoiceCall = async function(username) {
+            activeCallUser = username;
+            document.getElementById('callingUserName').innerText = username;
+            document.getElementById('callStatusTitle').innerText = "Ringing...";
+            document.getElementById('callModal').style.display = 'flex';
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                
+                update(ref(database, `users/${username}`), { 
+                    callState: { status: 'calling', from: 'admin', timestamp: Date.now() } 
+                });
+
+                onValue(ref(database, `users/${username}/callState`), (snapshot) => {
+                    const callData = snapshot.val();
+                    if(callData) {
+                        if(callData.status === 'accepted') {
+                            document.getElementById('callStatusTitle').innerText = "Connected (In Call)";
+                        } else if(callData.status === 'rejected' || callData.status === 'ended') {
+                            closeCallUI();
+                        }
+                    }
+                });
+
+                const call = peer.call(`peer_${username}`, localStream);
+                currentCall = call;
+
+                call.on('stream', remoteStream => {
+                    document.getElementById('remoteAudio').srcObject = remoteStream;
+                });
+
+                call.on('close', () => closeCallUI());
+
+            } catch (e) {
+                alert("Microphone Access Error: Please check HTTPS or Browser Permissions!");
+                closeCallUI();
+            }
+        };
+
+        window.endVoiceCall = function() {
+            if(activeCallUser) {
+                update(ref(database, `users/${activeCallUser}/callState`), { status: 'ended' });
+            }
+            closeCallUI();
+        };
+
+        function closeCallUI() {
+            if (currentCall) currentCall.close();
+            if (localStream) localStream.getTracks().forEach(track => track.stop());
+            document.getElementById('callModal').style.display = 'none';
+        }
+
+        window.toggleRecordVoice = async function() {
+            const micBtn = document.getElementById('adminMicBtn');
+            if(!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.readAsDataURL(audioBlob);
+                        reader.onloadend = () => {
+                            push(ref(database, `users/${selectedUser}/chats`), {
+                                sender: 'admin',
+                                type: 'audio',
+                                msg: reader.result,
+                                timestamp: Date.now()
+                            });
+                            updateUnread();
+                        };
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    micBtn.classList.add('recording');
+                } catch(e) {
+                    alert('Microphone Permission Denied!');
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                micBtn.classList.remove('recording');
+            }
+        };
+
+        function updateUnread() {
+            onValue(ref(database, `users/${selectedUser}`), (snapshot) => {
+                if(snapshot.exists()) {
+                    let currentVal = snapshot.val().unreadAdminMsgs || 0;
+                    update(ref(database, `users/${selectedUser}`), { unreadAdminMsgs: currentVal + 1 });
+                }
+            }, { onlyOnce: true });
+        }
+
+        document.getElementById('chatReplyInput').addEventListener('input', () => {
+            if(!selectedUser) return;
+            update(ref(database, `users/${selectedUser}`), { isAdminTyping: true });
+
+            clearTimeout(adminTypingTimeout);
+            adminTypingTimeout = setTimeout(() => {
+                update(ref(database, `users/${selectedUser}`), { isAdminTyping: false });
+            }, 2000);
+        });
+
+        window.generateCredentials = function() {
+            const username = document.getElementById('genUsername').value.trim();
+            const password = document.getElementById('genPassword').value.trim();
+            const days = parseInt(document.getElementById('genDays').value);
+            const deviceLimit = parseInt(document.getElementById('genDeviceLimit').value) || 1;
+            const alertBox = document.getElementById('adminAlert');
+
+            if (!username || !password || isNaN(days)) {
+                showAlert(alertBox, "Please fill all fields correctly!", "error");
+                return;
+            }
+
+            const expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + days);
+
+            set(ref(database, 'users/' + username), {
+                password: password,
+                expiryDate: expiryDate.toISOString(),
+                deviceLimit: deviceLimit,
+                isBanned: false,
+                autoNotice: "",
+                unreadUserMsgs: 0,
+                isTyping: false,
+                isAdminTyping: false,
+                lastActive: 0,
+                devices: {},
+                createdAt: new Date().toISOString()
+            }).then(() => {
+                showAlert(alertBox, `User '${username}' created successfully!`, "success");
+                document.getElementById('genUsername').value = '';
+                document.getElementById('genPassword').value = '';
+                document.getElementById('genDays').value = '';
+            }).catch((error) => {
+                showAlert(alertBox, "Error: " + error.message, "error");
+            });
+        };
+
+        window.toggleBanUser = function(username, currentStatus) {
+            update(ref(database, `users/${username}`), { isBanned: !currentStatus });
+        };
+
+        window.openNoticeModal = function(username) {
+            selectedUser = username;
+            document.getElementById('noticeTargetUser').innerText = `Notice for: ${username}`;
+            document.getElementById('noticeModal').style.display = 'flex';
+        };
+
+        window.sendAutoNotice = function() {
+            const msg = document.getElementById('adminNoticeText').value.trim();
+            if(!msg) return;
+            update(ref(database, `users/${selectedUser}`), { autoNotice: msg }).then(() => {
+                alert(`Notice sent to ${selectedUser}!`);
+                document.getElementById('adminNoticeText').value = '';
+                closeModal('noticeModal');
+            });
+        };
+
+        window.openChatModal = function(username) {
+            selectedUser = username;
+            document.getElementById('chatTargetUser').innerText = `Chat with: ${username}`;
+            document.getElementById('chatModal').style.display = 'flex';
+            update(ref(database, `users/${username}`), { unreadUserMsgs: 0 });
+
+            onValue(ref(database, `users/${username}/chats`), (snapshot) => {
+                const chatBox = document.getElementById('adminChatMessages');
+                chatBox.innerHTML = '';
+                if(snapshot.exists()) {
+                    snapshot.forEach((child) => {
+                        const c = child.val();
+                        let content = c.type === 'audio' ? `<audio controls src="${c.msg}"></audio>` : c.msg;
+                        chatBox.innerHTML += `<div class="msg-bubble ${c.sender === 'admin' ? 'msg-admin' : 'msg-user'}">${content}</div>`;
+                    });
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                } else {
+                    chatBox.innerHTML = `<p style="color:#666; text-align:center;">No chat messages yet.</p>`;
+                }
+            });
+
+            onValue(ref(database, `users/${username}/isTyping`), (snapshot) => {
+                const isTyping = snapshot.val() || false;
+                const modalTyping = document.getElementById('modalTypingStatus');
+                modalTyping.innerHTML = isTyping ? `
+                    <div class="typing-indicator">
+                        <span>User is typing</span>
+                        <div class="dots-bounce"><span></span><span></span><span></span></div>
+                    </div>` : '';
+            });
+        };
+
+        window.sendChatReply = function() {
+            const txt = document.getElementById('chatReplyInput').value.trim();
+            if(!txt) return;
+
+            push(ref(database, `users/${selectedUser}/chats`), { sender: 'admin', type: 'text', msg: txt, timestamp: Date.now() });
+            update(ref(database, `users/${selectedUser}`), { isAdminTyping: false });
+            updateUnread();
+            document.getElementById('chatReplyInput').value = '';
+        };
+
+        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
+
+        function formatTimeAgo(timestamp) {
+            if (!timestamp) return "অফলাইন";
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            if (seconds < 60) return "এইমাত্র (Online)";
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes} মিনিট আগে`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours} ঘণ্টা আগে`;
+            const days = Math.floor(hours / 24);
+            return `${days} দিন আগে`;
+        }
+
+        function showAlert(element, message, type) { 
+            element.className = `alert ${type}`; 
+            element.innerText = message; 
+        }
+
+        onValue(ref(database, 'users'), (snapshot) => {
+            const usersList = document.getElementById('usersList');
+            usersList.innerHTML = '';
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                for (let user in data) {
+                    const u = data[user];
+                    const activeDevices = u.devices ? Object.keys(u.devices).length : 0;
+                    const isBanned = u.isBanned || false;
+                    const unreadCount = u.unreadUserMsgs || 0;
+                    const isTyping = u.isTyping || false;
+
+                    const isOnline = (Date.now() - (u.lastActive || 0)) < 45000;
+                    const statusText = isOnline ? 
+                        `<span class="status-indicator"><i class="fa-solid fa-circle online-dot"></i> <span style="color:#00ff88;">Online</span></span>` : 
+                        `<span class="status-indicator"><i class="fa-solid fa-circle offline-dot"></i> <span style="color:#888;">${formatTimeAgo(u.lastActive)}</span></span>`;
+
+                    const typingHTML = isTyping ? `
+                        <div class="typing-indicator" style="margin-bottom: 5px;">
+                            <i class="fa-solid fa-pen-nib"></i> Typing
+                            <div class="dots-bounce"><span></span><span></span><span></span></div>
+                        </div>` : '';
+
+                    usersList.innerHTML += `
+                        <div class="user-card ${isBanned ? 'banned' : ''}">
+                            <div class="user-header">
+                                <div>
+                                    <b style="color:${isBanned ? 'var(--accent-neon)' : 'var(--primary-neon)'}; font-size:1.05rem;">${user}</b>
+                                    <span style="color:#888; font-size:0.8rem;">(Pass: ${u.password})</span>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="call-btn" title="Live Call" onclick="startVoiceCall('${user}')"><i class="fa-solid fa-phone"></i></button>
+                                    <button class="notice-btn" title="Notice" onclick="openNoticeModal('${user}')"><i class="fa-solid fa-bullhorn"></i></button>
+                                    <div class="chat-btn-wrapper">
+                                        <button class="chat-btn" title="Mailbox" onclick="openChatModal('${user}')"><i class="fa-solid fa-envelope"></i></button>
+                                        ${unreadCount > 0 ? `<div class="badge-count">${unreadCount}</div>` : ''}
+                                    </div>
+                                    <button class="${isBanned ? 'unban-btn' : 'ban-btn'}" onclick="toggleBanUser('${user}', ${isBanned})">${isBanned ? 'UNBAN' : 'BAN'}</button>
+                                </div>
+                            </div>
+                            ${statusText}
+                            ${typingHTML}
+                            <div style="font-size:0.75rem; color:#888;">
+                                Expire: ${new Date(u.expiryDate).toLocaleDateString()} | Devices: ${activeDevices}/${u.deviceLimit}
+                            </div>
+                        </div>`;
+                }
+            } else {
+                usersList.innerHTML = '<p style="text-align:center; color:#888;">No users found!</p>';
+            }
+        });
+
+        loadUpdateData();
+    </script>
+</body>
+</html>
